@@ -55,9 +55,6 @@ export function parseDate(raw: string): Date | null {
 
     // If c > 31 it's the year → format is M/D/YYYY or D/M/YYYY
     if (c > 31) {
-      // If b > 12, must be M/D/YYYY (b is day)
-      // If a > 12, must be D/M/YYYY (a is day)
-      // Default for this project: assume M/D/YYYY (Google Sheets US format)
       if (a > 12) {
         // D/M/YYYY
         const date = new Date(Date.UTC(c, b - 1, a))
@@ -180,13 +177,24 @@ export async function fetchAndParseSheet(
   return result
 }
 
-const SHEET_IDS: Record<string, { id: string; sheetName: string }> = {
-  Amsterdam: {
-    id: '1ez3nDHt2GIoF5Uqq2sQi-NKj8Bfi1Z47-TawiPqq0-g',
-    sheetName: 'Form Responses 1',
-  },
+export const SHEET_IDS: Record<string, { id: string; sheetName: string }> = {
+  'Amsterdam':                      { id: '1ez3nDHt2GIoF5Uqq2sQi-NKj8Bfi1Z47-TawiPqq0-g', sheetName: 'Form Responses 1' },
+  'Athens':                         { id: '1J2SJZQ7K7_IkbdNyeSJ8TSuXUOxipZGrAZEnvaOk85Q', sheetName: 'Form Responses 1' },
+  'Barcelona Alternative':          { id: '1AtvFGE85Gt5yJnLW8hbDvjYeui3NwqLlpEH7isPKTJQ', sheetName: 'Form Responses 1' },
+  'Barcelona Pub Crawl':            { id: '1Krle486ytkBNGJLIfHbyg-xFHGOxcEt4M61xcN5rXng', sheetName: 'Form Responses 1' },
+  'Berlin Alternative Pub Crawl':   { id: '1qLi5dv77BXJu4KGZ27ypZTUzSXFnmbJ2gO-BP4vSoKI', sheetName: 'Form Responses 1' },
+  'Berlin Alternative Tour':        { id: '1kVjDJpenkcVvw6c-rWqnWS4HfEnFAK3jtbun-ED8gDo', sheetName: 'Form Responses 1' },
+  'Berlin Free Walking Tour':       { id: '1ELiVdTEhxwwtIf_KxLjqz1MisW5C-W8VI-2zq7_j5Oo', sheetName: 'Form Responses 1' },
+  'Berlin Potsdam Tour':            { id: '1Z5paateflvkXcvIm9d-qxAYPCQJJxQK6sJNK1_s3uRU', sheetName: 'Form Responses 1' },
+  'Berlin Pub Crawl':               { id: '1ALQmNhJ4j4Y4HL8_1xyd-gelD5t3XXVpj7qhCRZcGcY', sheetName: 'Form Responses 1' },
+  'Budapest Pub Crawl':             { id: '1ivH1be9rhCmbRXt7P3gBK6OuS4kMjId9WbBmsK2e2kk', sheetName: 'Form Responses 1' },
+  'Hamburg Daily Pub Crawl':        { id: '1xmUwrWMfIIkSu-YBP68zfmte_V34Bhq_FWcmcbjhnwQ', sheetName: 'Form Responses 1' },
 }
 
 export function getSheetConfig(city: string) {
   return SHEET_IDS[city] ?? null
+}
+
+export function getCityList(): string[] {
+  return Object.keys(SHEET_IDS)
 }
