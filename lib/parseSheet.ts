@@ -26,35 +26,51 @@ export interface TourRow {
 }
 
 /**
- * Parse a date string that may be in DD/MM/YYYY, MM/DD/YYYY, or YYYY-MM-DD format.
+ * Parse a date string that may be in multiple formats:
+ * - M/D/YYYY HH:mm:ss  (Google Sheets timestamp — most common)
+ * - M/D/YYYY
+ * - DD/MM/YYYY
+ * - YYYY-MM-DD
  * Returns a Date object at midnight UTC for comparison.
  */
-function parseDate(raw: string): Date | null {
+export function parseDate(raw: string): Date | null {
   if (!raw || raw.trim() === '') return null
 
   const trimmed = raw.trim()
 
-  // ISO format: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss
-  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
-    const d = new Date(trimmed.substring(0, 10))
-    if (!isNaN(d.getTime())) return d
+  // Strip time portion if present (e.g. "6/5/2026 10:30:00 PM" → "6/5/2026")
+  const dateOnly = trimmed.split(' ')[0]
+
+  // ISO format: YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
+    const [y, m, d] = dateOnly.split('-').map(Number)
+    const date = new Date(Date.UTC(y, m - 1, d))
+    if (!isNaN(date.getTime())) return date
   }
 
-  // DD/MM/YYYY or MM/DD/YYYY
-  const slashParts = trimmed.split('/')
+  // Slash-separated: M/D/YYYY or DD/MM/YYYY
+  const slashParts = dateOnly.split('/')
   if (slashParts.length === 3) {
     const [a, b, c] = slashParts.map((p) => parseInt(p, 10))
-    // If first part > 12, it must be DD/MM/YYYY
-    if (a > 12) {
-      const d = new Date(Date.UTC(c, b - 1, a))
-      if (!isNaN(d.getTime())) return d
+
+    // If c > 31 it's the year → format is M/D/YYYY or D/M/YYYY
+    if (c > 31) {
+      // If b > 12, must be M/D/YYYY (b is day)
+      // If a > 12, must be D/M/YYYY (a is day)
+      // Default for this project: assume M/D/YYYY (Google Sheets US format)
+      if (a > 12) {
+        // D/M/YYYY
+        const date = new Date(Date.UTC(c, b - 1, a))
+        if (!isNaN(date.getTime())) return date
+      } else {
+        // M/D/YYYY (US format — Google Sheets default)
+        const date = new Date(Date.UTC(c, a - 1, b))
+        if (!isNaN(date.getTime())) return date
+      }
     }
-    // Otherwise assume DD/MM/YYYY (European convention used in this context)
-    const d = new Date(Date.UTC(c, b - 1, a))
-    if (!isNaN(d.getTime())) return d
   }
 
-  // Try native parsing as fallback
+  // Fallback: native parsing
   const fallback = new Date(trimmed)
   if (!isNaN(fallback.getTime())) return fallback
 
@@ -98,8 +114,10 @@ export async function fetchAndParseSheet(
   const end = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()))
 
   for (const row of rows) {
+    // Column F (index 5) = Tour Date
     const tourDateRaw = row[5] ?? ''
     const tourDate = parseDate(tourDateRaw)
+
     if (!tourDate) continue
 
     // Normalise to midnight UTC for comparison
