@@ -1,4 +1,4 @@
-import clientPromise from '@/lib/mongodb'
+import getClientPromise from '@/lib/mongodb'
 import { TourRow, parseDate } from '@/lib/parseSheet'
 
 export const MONGO_CITY_MAP: Record<string, { city: string; tour: string }> = {
@@ -15,16 +15,12 @@ export async function fetchAndParseMongoData(
   startDate: Date,
   endDate: Date
 ): Promise<TourRow[]> {
-  if (!process.env.MONGODB_URI) {
-    throw new Error('MONGODB_URI environment variable is not set')
-  }
-
   const filter = MONGO_CITY_MAP[cityKey]
   if (!filter) {
     throw new Error(`Unknown MongoDB city: ${cityKey}`)
   }
 
-  const client = await clientPromise
+  const client = await getClientPromise()
   const db = client.db('test')
   const collection = db.collection('Guides')
 
