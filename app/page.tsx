@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCityList } from '@/lib/parseSheet'
+import { MONGO_CITY_MAP } from '@/lib/parseMongo'
 
-const CITIES = getCityList()
+const CITIES = [...getCityList(), ...Object.keys(MONGO_CITY_MAP)].sort()
 
 export default function HomePage() {
   const router = useRouter()
