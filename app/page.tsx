@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCityList } from '@/lib/parseSheet'
-import { MONGO_CITY_MAP } from '@/lib/parseMongo'
+import { MONGO_CITY_MAP } from '@/lib/mongoCities'
 
 const SHEET_CITIES = getCityList().map((c) => ({ value: c, label: c }))
 const MONGO_CITIES = Object.keys(MONGO_CITY_MAP).map((c) => ({ value: c, label: `${c} (MongoDB)` }))
