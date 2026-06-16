@@ -191,6 +191,7 @@ export const SHEET_IDS: Record<string, { id: string; sheetName: string }> = {
   'Hamburg Daily Pub Crawl':      { id: '1xmUwrWMfIIkSu-YBP68zfmte_V34Bhq_FWcmcbjhnwQ', sheetName: 'Form Responses 1' },
   'Paris':                        { id: '1YFiZwjtu2qwFS9rCc9Nnf0YYI40AtVBa4Z6CLxXv5I4', sheetName: 'Form Responses 1' },
   'Stockholm':                    { id: '1wzw380UrmCXH03jVw1_PnvzIhZ0t_MMcxefP6qx4pr4', sheetName: 'Form Responses 1' },
+  'Stockholm Uppsala Tour':       { id: '1ddvZmHsJNv1mZNi_XqA3itoTV908TCoNQUEcAQXS40w', sheetName: 'Form Responses 1' },
   'Warsaw':                       { id: '1fOmbxVRlsYHEA1wUqoA1Vus46e9OfibGCrV1Lz5CSY8', sheetName: 'Form Responses 1' },
 }
 
