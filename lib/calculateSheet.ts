@@ -94,14 +94,15 @@ export function calculateSheet(data: TourData): SheetResult {
       g.fifthGuidePayment
 
     const rowRevenue =
-      g.websiteRevenue + g.botRevenue + g.eventbriteRevenue + g.meetupRevenue + g.airbnbRevenue
+      g.websiteRevenue + g.botRevenue + g.gygRevenue + g.viaRevenue +
+      g.eventbriteRevenue + g.meetupRevenue + g.airbnbRevenue
 
     const rowTotalExpenses = guidePayments + g.dailyExpenses
     const rowGrossProfit = rowRevenue - rowTotalExpenses
     const rowRunningCosts = rowGrossProfit * 0.4
-    const rowNetProfit = rowGrossProfit - rowRunningCosts - g.googleAdsCost
-    const rowShare25 = rowNetProfit > 0 ? rowNetProfit * 0.25 : 0
-    const rowTotalProfit = rowNetProfit - rowShare25
+    const rowNetProfit = rowGrossProfit - Math.abs(rowRunningCosts)
+    const rowShare25 = rowNetProfit < 0 ? 0 : rowNetProfit * 0.25
+    const rowTotalProfit = rowNetProfit - Math.abs(rowShare25)
 
     totalRevenue += rowRevenue
     totalGuidePayments += guidePayments
@@ -159,9 +160,9 @@ export function calculateSheet(data: TourData): SheetResult {
   const totalExpenses = totalGuidePayments + totalDailyExpenses + managerFee + otherExpenses
   const grossProfit = totalRevenue - totalExpenses
   const runningCosts = grossProfit * 0.4
-  const netProfit = grossProfit - runningCosts - totalGoogleCost
+  const netProfit = grossProfit - Math.abs(runningCosts) - Math.abs(totalGoogleCost)
   const share25 = netProfit > 0 ? netProfit * 0.25 : 0
-  const totalProfit = netProfit - share25
+  const totalProfit = netProfit > 0 ? netProfit - netProfit * 0.25 : netProfit
 
   // Guide payment totals for footer
   const guidePayTotals: string[] = []
