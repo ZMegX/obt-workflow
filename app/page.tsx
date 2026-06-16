@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import { getCityList } from '@/lib/parseSheet'
 import { MONGO_CITY_MAP } from '@/lib/parseMongo'
 
-const CITIES = [...getCityList(), ...Object.keys(MONGO_CITY_MAP)].sort()
+const SHEET_CITIES = getCityList().map((c) => ({ value: c, label: c }))
+const MONGO_CITIES = Object.keys(MONGO_CITY_MAP).map((c) => ({ value: c, label: `${c} (MongoDB)` }))
+const CITIES = [...SHEET_CITIES, ...MONGO_CITIES].sort((a, b) => a.label.localeCompare(b.label))
 
 export default function HomePage() {
   const router = useRouter()
-  const [city, setCity] = useState(CITIES[0])
+  const [city, setCity] = useState(CITIES[0].value)
   const [startDate, setStartDate] = useState('2026-06-01')
   const [endDate, setEndDate] = useState('2026-06-07')
   const [loading, setLoading] = useState(false)
@@ -40,7 +42,7 @@ export default function HomePage() {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {CITIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
           </div>
