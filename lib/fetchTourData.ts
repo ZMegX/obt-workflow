@@ -78,6 +78,8 @@ export interface MatchedGuide {
   // Booking revenue by source
   websiteRevenue: number
   botRevenue: number
+  gygRevenue: number
+  viaRevenue: number
   eventbriteRevenue: number
   meetupRevenue: number
   airbnbRevenue: number
@@ -109,7 +111,7 @@ export interface TourData {
 
 function n(v: string | number | undefined | null): number {
   if (v === undefined || v === null || v === '') return 0
-  const parsed = parseFloat(String(v).replace(',', '.'))
+  const parsed = parseFloat(String(v).replace(/[^0-9.,]/g, '').replace(',', '.'))
   return isNaN(parsed) ? 0 : parsed
 }
 
@@ -135,6 +137,53 @@ function tourRegex(tc: TourConfig): RegExp {
   // Escape any regex special characters from user input before constructing the fallback
   const escaped = tc.tour.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   return new RegExp(escaped, 'i')
+}
+
+/** Accumulate guest counts and revenue per source. */
+interface BookingAccumulator {
+  websiteRevenue: number
+  botRevenue: number
+  gygRevenue: number
+  viaRevenue: number
+  eventbriteRevenue: number
+  meetupRevenue: number
+  airbnbRevenue: number
+  gygGuests: number
+  viaGuests: number
+  websiteGuests: number
+  eventbriteGuests: number
+  meetupGuests: number
+  totalGuests: number
+}
+
+function addGuests(
+  acc: BookingAccumulator,
+  b: RawBooking,
+): void {
+  const guests = n(b.guests)
+  const total = n(b.total)
+  const s = b.source.toLowerCase()
+  acc.totalGuests += guests
+  if (s === 'gyg' || s === 'getyourguide') {
+    acc.gygGuests += guests
+    acc.gygRevenue += total
+  } else if (s === 'viator' || s === 'viator.com') {
+    acc.viaGuests += guests
+    acc.viaRevenue += total
+  } else if (s === 'website') {
+    acc.websiteGuests += guests
+    acc.websiteRevenue += total
+  } else if (s === 'eventbrite') {
+    acc.eventbriteGuests += guests
+    acc.eventbriteRevenue += total
+  } else if (s === 'meetup' || s === 'meetup.com') {
+    acc.meetupGuests += guests
+    acc.meetupRevenue += total
+  } else if (s === 'bot') {
+    acc.botRevenue += total
+  } else if (s === 'airbnb') {
+    acc.airbnbRevenue += total
+  }
 }
 
 /** True if the guide time matches the expected AM/PM period. */
@@ -164,63 +213,6 @@ function bookingMidnight(startDate: string): Date | null {
   const d = parseDate(datePart)
   if (!d) return null
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-}
-
-/** True if a booking should be included in revenue (excludes GYG / VIA / GetYourGuide). */
-function isRevenueSource(source: string): boolean {
-  const s = source.toLowerCase()
-  return s !== 'gyg' && s !== 'getyourguide' && s !== 'viator' && s !== 'viator.com'
-}
-
-const BOT_COMMISSION = 0.25
-
-function revenueFromBooking(b: RawBooking): number {
-  const total = n(b.total)
-  const s = b.source.toLowerCase()
-  if (s === 'bot') return total * (1 - BOT_COMMISSION)
-  return isRevenueSource(b.source) ? total : 0
-}
-
-/** Accumulate guest counts per source. */
-interface BookingAccumulator {
-  websiteRevenue: number
-  botRevenue: number
-  eventbriteRevenue: number
-  meetupRevenue: number
-  airbnbRevenue: number
-  gygGuests: number
-  viaGuests: number
-  websiteGuests: number
-  eventbriteGuests: number
-  meetupGuests: number
-  totalGuests: number
-}
-
-function addGuests(
-  acc: BookingAccumulator,
-  b: RawBooking,
-): void {
-  const guests = n(b.guests)
-  const s = b.source.toLowerCase()
-  acc.totalGuests += guests
-  if (s === 'gyg' || s === 'getyourguide') {
-    acc.gygGuests += guests
-  } else if (s === 'viator' || s === 'viator.com') {
-    acc.viaGuests += guests
-  } else if (s === 'website') {
-    acc.websiteGuests += guests
-    acc.websiteRevenue += revenueFromBooking(b)
-  } else if (s === 'eventbrite') {
-    acc.eventbriteGuests += guests
-    acc.eventbriteRevenue += revenueFromBooking(b)
-  } else if (s === 'meetup' || s === 'meetup.com') {
-    acc.meetupGuests += guests
-    acc.meetupRevenue += revenueFromBooking(b)
-  } else if (s === 'bot') {
-    acc.botRevenue += revenueFromBooking(b)
-  } else if (s === 'airbnb') {
-    acc.airbnbRevenue += revenueFromBooking(b)
-  }
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
@@ -307,13 +299,37 @@ export async function fetchTourData(params: {
     })
     .toArray() as unknown as RawBooking[]
 
-  const relevantBookings = rawBookings.filter((b) => {
+  const filteredBookings = rawBookings.filter((b) => {
     if (!tRegex.test(b.tour_name ?? '')) return false
     const bMid = bookingMidnight(b.start_date ?? '')
     if (!bMid) return false
     const ymd = toYMD(bMid)
     return guideYMDs.has(ymd)
   })
+
+  // ── Fetch ImportedBookings (GYG/VIA imported data) ────────────────────────
+  // NOTE: If the ImportedBookings collection does not exist in this database,
+  // MongoDB returns an empty cursor and importedBookings will be [].
+  let importedBookings: RawBooking[] = []
+  try {
+    const rawImported = await db.collection('ImportedBookings')
+      .find({
+        city,
+        status: { $nin: ['canceled', 'Canceled', 'CANCELED'] },
+      })
+      .toArray() as unknown as RawBooking[]
+    importedBookings = rawImported.filter((b) => {
+      if (!tRegex.test(b.tour_name ?? '')) return false
+      const bMid = bookingMidnight(b.start_date ?? '')
+      if (!bMid) return false
+      const ymd = toYMD(bMid)
+      return guideYMDs.has(ymd)
+    })
+  } catch {
+    // ImportedBookings collection not available in this environment
+  }
+
+  const relevantBookings = [...filteredBookings, ...importedBookings]
 
   // ── Fetch Google Ads ──────────────────────────────────────────────────────
   const allAds = await db.collection('google_ads')
@@ -378,6 +394,8 @@ export async function fetchTourData(params: {
     const booking = {
       websiteRevenue: 0,
       botRevenue: 0,
+      gygRevenue: 0,
+      viaRevenue: 0,
       eventbriteRevenue: 0,
       meetupRevenue: 0,
       airbnbRevenue: 0,
