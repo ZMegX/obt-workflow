@@ -187,6 +187,7 @@ export const SHEET_IDS: Record<string, { id: string; sheetName: string }> = {
   'Berlin Free Walking Tour':     { id: '1ELiVdTEhxwwtIf_KxLjqz1MisW5C-W8VI-2zq7_j5Oo', sheetName: 'Form Responses 1' },
   'Berlin Potsdam Tour':          { id: '1Z5paateflvkXcvIm9d-qxAYPCQJJxQK6sJNK1_s3uRU', sheetName: 'Form Responses 1' },
   'Berlin Pub Crawl':             { id: '1ALQmNhJ4j4Y4HL8_1xyd-gelD5t3XXVpj7qhCRZcGcY', sheetName: 'Form Responses 1' },
+  'Berlin Sachsenhausen Tour':    { id: '1L_81GG-DvZAXMiGuussx14XvytTO-ETs1osrftMa39Q', sheetName: 'Form Responses 1' },
   'Budapest Pub Crawl':           { id: '1ivH1be9rhCmbRXt7P3gBK6OuS4kMjId9WbBmsK2e2kk', sheetName: 'Form Responses 1' },
   'Hamburg Daily Pub Crawl':      { id: '1xmUwrWMfIIkSu-YBP68zfmte_V34Bhq_FWcmcbjhnwQ', sheetName: 'Form Responses 1' },
   'Paris':                        { id: '1YFiZwjtu2qwFS9rCc9Nnf0YYI40AtVBa4Z6CLxXv5I4', sheetName: 'Form Responses 1' },
