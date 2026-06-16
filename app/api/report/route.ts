@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchAndParseSheet, getSheetConfig } from '@/lib/parseSheet'
+import { fetchAndParseMongoData, isMongoCity } from '@/lib/parseMongo'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,8 +11,9 @@ export async function GET(request: NextRequest) {
   const startDateStr = searchParams.get('startDate') ?? '2026-06-01'
   const endDateStr = searchParams.get('endDate') ?? '2026-06-07'
 
-  const sheetConfig = getSheetConfig(city)
-  if (!sheetConfig) {
+  const mongoCity = isMongoCity(city)
+  const sheetConfig = mongoCity ? null : getSheetConfig(city)
+  if (!mongoCity && !sheetConfig) {
     return NextResponse.json({ error: `Unknown city: ${city}` }, { status: 400 })
   }
 
@@ -23,7 +25,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const rows = await fetchAndParseSheet(sheetConfig.id, sheetConfig.sheetName, startDate, endDate)
+    const rows = mongoCity
+      ? await fetchAndParseMongoData(city, startDate, endDate)
+      : await fetchAndParseSheet(sheetConfig!.id, sheetConfig!.sheetName, startDate, endDate)
     return NextResponse.json({ city, startDate: startDateStr, endDate: endDateStr, rows })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
