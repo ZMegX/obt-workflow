@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchAndParseSheet, getSheetConfig } from '@/lib/parseSheet'
+import { isMongoCity, fetchAndParseMongoData } from '@/lib/parseMongo'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,11 +11,6 @@ export async function GET(request: NextRequest) {
   const startDateStr = searchParams.get('startDate') ?? '2026-06-01'
   const endDateStr = searchParams.get('endDate') ?? '2026-06-07'
 
-  const sheetConfig = getSheetConfig(city)
-  if (!sheetConfig) {
-    return NextResponse.json({ error: `Unknown city: ${city}` }, { status: 400 })
-  }
-
   const startDate = new Date(startDateStr)
   const endDate = new Date(endDateStr)
 
@@ -23,6 +19,18 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // MongoDB cities
+    if (isMongoCity(city)) {
+      const rows = await fetchAndParseMongoData(city, startDate, endDate)
+      return NextResponse.json({ city, startDate: startDateStr, endDate: endDateStr, rows })
+    }
+
+    // Google Sheets cities
+    const sheetConfig = getSheetConfig(city)
+    if (!sheetConfig) {
+      return NextResponse.json({ error: `Unknown city: ${city}` }, { status: 400 })
+    }
+
     const rows = await fetchAndParseSheet(sheetConfig.id, sheetConfig.sheetName, startDate, endDate)
     return NextResponse.json({ city, startDate: startDateStr, endDate: endDateStr, rows })
   } catch (err) {

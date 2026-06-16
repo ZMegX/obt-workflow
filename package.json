@@ -12,7 +12,8 @@
     "next": "15.5.19",
     "react": "^18",
     "react-dom": "^18",
-    "papaparse": "^5.4.1"
+    "papaparse": "^5.4.1",
+    "mongodb": "^6"
   },
   "devDependencies": {
     "@types/node": "^20",
